@@ -12,6 +12,7 @@ let rulesetFilePaths = [];
 //    ruleset: 'ruleset1',
 //    ruleId: 'rule1'
 //}
+
 let urlFilterStrings = [];
 
 // Helper class contaning methods to parse the URLFilter string of a rule
@@ -23,6 +24,15 @@ let urlFilterStrings = [];
 //     anchorRight: 'BOUNDARY' | 'NONE'
 // }
 
+let indexedRulesList = [];
+// Contains list of indexedRule objects, each with the following signature:-
+//{
+//  TODO
+//
+//}
+
+// URLFilterParser: Class for parsing the URLFilter string of a rule, borrows generously from Chromium source code:-
+// https://source.chromium.org/chromium/chromium/src/+/main:extensions/browser/api/declarative_net_request/indexed_rule.cc;l=47
 class URLFilterParser {
     constructor(urlFilter, indexedRule) {
         this.urlFilter = urlFilter || '';
@@ -117,10 +127,31 @@ manifestFileInput.addEventListener('change', (event) => {
         reader.onload = function(e) {
             try {
                 const manifestObject = JSON.parse(e.target.result);
-                displayRulesetFilePaths(manifestObject);
+                let manifestSyntaxError = isValidManifest(manifestObject);
+                if(manifestSyntaxError === true){ // if manifestSyntaxError is true, i.e., there are no errors
+                    displayRulesetFilePaths(manifestObject);
+                } else {
+                    const fileInfoDiv = document.getElementById('manifestFileInfo');
+                    let output = "<ul>";
+
+                    for(let i = 0; i < manifestSyntaxError['type'].length; i++){
+                        if(manifestSyntaxError['type'][i] === 'missingFields'){
+                            let missingFields = manifestSyntaxError['missingFields'].join(', ');
+                            // fileInfoDiv.textContent = `Missing fields: ${missingFields}`;
+                            output += `<li>Missing fields: ${missingFields}</li>`;
+                        }
+                        if(manifestSyntaxError['type'][i] === 'invalidValueTypes'){
+                            let invalidValueTypes = manifestSyntaxError['invalidValueTypes'].join(', ');
+                            // fileInfoDiv.textContent = `Invalid value types for: ${invalidValueTypes}`;
+                            output += `<li>Invalid value types for: ${invalidValueTypes}</li>`;
+                        }
+                        output += '</ul>';
+                        fileInfoDiv.innerHTML = output;                    
+                    }
+                }
             } catch(error){
                 console.log("Error parsing manifest JSON: ", error);
-                document.getElementById('fileInfo').textContent = 'Error parsing manifest.json file';
+                document.getElementById('manifestFileInfo').textContent = 'Error parsing manifest.json file';
             }
         }
         reader.readAsText(manifestFile);
@@ -164,7 +195,11 @@ filesInput.addEventListener('change', (event) => {
                         ruleset: rulesetJSONParsed,
                         rulesetId: rulesetIndex
                     }
-                    displayRules(rulesetObject);
+                    if(isValidRuleset(rulesetObject.ruleset)){
+                        displayRules(rulesetObject);
+                    } else {
+                        document.getElementById('ruleFilesInfo').textContent = `Invalid ruleset with id: ${rulesetObject.rulesetId}`;
+                    } 
                     // console.log(ruleObject); correct
                 } catch(error){
                     console.log("Error parsing rule files: ", error);
@@ -187,7 +222,7 @@ function displayRules(rulesetObject){
         const urlFilterString = rule.condition.urlFilter;
         const ruleID = rule.id;
         let ruleIsValid = "";
-        if(checkRuleValidity(rule)){
+        if(isValidRule(rule)){
             ruleIsValid = "Valid.";
         } else {
             ruleIsValid = "Invalid.";
@@ -195,7 +230,6 @@ function displayRules(rulesetObject){
         output += `<li>${ruleID}: URLFilter String = ${urlFilterString}, Rules Validity: ${ruleIsValid}`; // for now this much info suffices
         output += '</li>';
         let indexedRule = urlFilterParse(rule.condition.urlFilter);
-
     });
     output += '</ul>';
     fileInfo.innerHTML = output;
@@ -204,9 +238,9 @@ function displayRules(rulesetObject){
 
 
 // Checks validity of rule, including checking validity of its condition, i.e., the URLFilter string
-function checkRuleValidity(rule){
+function isValidRule(rule){
     let isValid = true;
-    console.log(rule);
+    // console.log(rule); // correct
     if(!rule.id || (rule.id && !Number.isInteger(rule.id))){
         isValid = false;
         console.log('id');
@@ -232,6 +266,7 @@ function checkRuleValidity(rule){
     return isValid;
 }
 
+// Checks validity of URLFilter string
 function isValidURLFilter(urlFilterString) {
     // Ensure only valid constructs are present
     const validConstructs = /^[\*\|\^a-zA-Z0-9_\-\.%?/;=@&:]+$/;
@@ -266,6 +301,183 @@ function isValidURLFilter(urlFilterString) {
             return false; // Cannot have | in the middle.
         }
     }
+    return true;
+}
+
+// Checks syntax and validity of the manifest file
+function isValidManifest(manifest) {
+    let syntaxError = {};
+    syntaxError['type'] = [];
+
+    // Check for required fields
+    const requiredFields = ['name', 'version', 'manifest_version']; // "descripton" and "icon" required for web store
+    const requiredFieldsTypes = ['string', 'string', 'number'];
+    for (let i = 0; i < requiredFields.length; i++) {
+        if (!manifest.hasOwnProperty(requiredFields[i])) {
+            syntaxError.isError = true;
+            syntaxError['type'].push('missingFields');
+            syntaxError['missingFields'] = [];
+            syntaxError['missingFields'].push(requiredFields[i]);
+        }
+        if(manifest.hasOwnProperty(requiredFields[i]) && (typeof manifest[requiredFields[i]] !== requiredFieldsTypes[i])){
+            syntaxError.isError = true;
+            if(!syntaxError['type'].includes('invalidValueTypes')){
+                syntaxError['type'].push('invalidValueTypes');
+                syntaxError['invalidValueTypes'] = [];
+            }
+            syntaxError['invalidValueTypes'].push(requiredFields[i]);
+        }
+    }
+
+    const otherFields = [
+        "action",
+        "author",
+        "background",
+        "browser_action",
+        "chrome_settings_overrides",
+        "chrome_ui_overrides",
+        "chrome_url_overrides",
+        "commands",
+        "content_security_policy",
+        "content_scripts",
+        "converted_from_user_script",
+        "current_locale",
+        "default_locale",
+        "description",
+        "devtools_page",
+        "event_rules",
+        "externally_connectable",
+        "file_browser_handlers",
+        "file_system_provider_capabilities",
+        "homepage_url",
+        "host_permissions",
+        "icons",
+        "import",
+        "incognito",
+        "input_components",
+        "key",
+        "minimum_chrome_version",
+        "nacl_modules",
+        "oauth2",
+        "offline_enabled",
+        "omnibox",
+        "optional_permissions",
+        "options_page",
+        "options_ui",
+        "page_action",
+        "permissions",
+        "platforms",
+        "replacement_web_app",
+        "requirements",
+        "sandbox",
+        "short_name",
+        "sidebar_action",
+        "storage",
+        "tts_engine",
+        "update_url",
+        "version_name",
+        "web_accessible_resources",
+        "webview"
+    ];
+    
+    const otherFieldTypes = [
+        "object",   // action
+        "string",   // author
+        "object",   // background
+        "object",   // browser_action
+        "object",   // chrome_settings_overrides
+        "object",   // chrome_ui_overrides
+        "object",   // chrome_url_overrides
+        "object",   // commands
+        "string",   // content_security_policy
+        "array",    // content_scripts
+        "boolean",  // converted_from_user_script
+        "string",   // current_locale
+        "string",   // default_locale
+        "string",   // description
+        "string",   // devtools_page
+        "array",    // event_rules
+        "object",   // externally_connectable
+        "array",    // file_browser_handlers
+        "object",   // file_system_provider_capabilities
+        "string",   // homepage_url
+        "array",    // host_permissions
+        "object",   // icons
+        "array",    // import
+        "object",   // incognito
+        "object",   // input_components
+        "string",   // key
+        "string",   // minimum_chrome_version
+        "array",    // nacl_modules
+        "object",   // oauth2
+        "boolean",  // offline_enabled
+        "object",   // omnibox
+        "array",    // optional_permissions
+        "string",   // options_page
+        "object",   // options_ui
+        "object",   // page_action
+        "array",    // permissions
+        "object",   // platforms
+        "object",   // replacement_web_app
+        "object",   // requirements
+        "object",   // sandbox
+        "string",   // short_name
+        "object",   // sidebar_action
+        "object",   // storage
+        "object",   // tts_engine
+        "string",   // update_url
+        "string",   // version_name
+        "array",    // web_accessible_resources
+        "object"    // webview
+    ];
+    
+    for(let i = 0; i < otherFieldTypes.length; i++){
+        if(manifest.hasOwnProperty(otherFields[i]) && (otherFieldTypes[i] !== "array") && (typeof manifest[otherFields[i]] !== otherFieldTypes[i])){
+            syntaxError.isError = true;
+            if(!syntaxError['type'].includes('invalidValueTypes')){
+                syntaxError['type'].push('invalidValueTypes');
+            }
+            syntaxError['invalidValueTypes'].push(otherFields[i]);
+        }
+        if(manifest.hasOwnProperty(otherFields[i]) && (otherFieldTypes[i] === "array") && !Array.isArray(manifest[otherFields[i]])){
+            syntaxError.isError = true;
+            if(!syntaxError['type'].includes('invalidValueTypes')){
+                syntaxError['type'].push('invalidValueTypes');
+            }
+            syntaxError['invalidValueTypes'].push(otherFields[i]);
+        }
+    }
+
+    // if (manifest.manifest_version === 2) {
+    //     // Specific checks for manifest v2
+    // } else if (manifest.manifest_version === 3) {
+    //     // Specific checks for manifest v3
+    // }
+
+    if(syntaxError.isError == true){
+        console.log("manifest syntax error: ");
+        console.log(syntaxError);        
+        return syntaxError;
+    } else {
+        console.log("isValidManifest: true"); // correct
+        return true;
+    }
+}
+
+// Checks syntax and validity of ruleset file
+function isValidRuleset(ruleset) {
+    // Check if the ruleset is an array and is non-empty
+    if (!Array.isArray(ruleset) || ruleset.length === 0) {
+        return false;
+    }
+
+    // Validate each rule in the ruleset
+    for (let rule of ruleset) {
+        if (!isValidRule(rule)) {
+            return false;
+        }
+    }
+
     return true;
 }
 
