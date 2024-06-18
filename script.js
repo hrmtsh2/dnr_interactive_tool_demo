@@ -44,6 +44,9 @@ class URLFilterParser {
         if (!indexedRule) {
             throw new Error('IndexedRule is required');
         }
+        if(!isValidURLFilter(urlFilter)){
+            throw new Error('Invalid URLFilter string');            
+        }
         new URLFilterParser(urlFilter, indexedRule).parseImpl();
     }
     parseImpl() {
@@ -168,7 +171,7 @@ function displayRulesetFilePaths(manifest){
             rulesetFilePaths.push({rulesetFilePath: ruleset.path, rulesetId: ruleset.id});
         });
         output += '</ul>';
-        console.log(rulesetFilePaths)
+        // console.log(rulesetFilePaths); // correct
         fileInfo.innerHTML = output;     
     }
 }
@@ -236,7 +239,6 @@ function displayRules(rulesetObject){
     ruleFilesInfo.appendChild(fileInfo);
 }
 
-
 // Checks validity of rule, including checking validity of its condition, i.e., the URLFilter string
 function isValidRule(rule){
     let isValid = true;
@@ -259,8 +261,8 @@ function isValidRule(rule){
     }
     if(!isValidURLFilter(rule.condition.urlFilter)){
         isValid = false;
-        console.log('urlFilter');
-        console.log(rule.condition.urlFilter + " - " + isValidURLFilter(rule.condition.urlFilter)); // correct
+        // console.log('urlFilter'); // correct
+        // console.log(rule.condition.urlFilter + " - " + isValidURLFilter(rule.condition.urlFilter)); // correct
     }
     // console.log(rule.condition.urlFilter + " - " + isValidURLFilter(rule.condition.urlFilter)); // correct
     return isValid;
@@ -300,6 +302,9 @@ function isValidURLFilter(urlFilterString) {
         if(urlFilterString.slice(2).includes('|') && !urlFilterString.endsWith('|')){
             return false; // Cannot have | in the middle.
         }
+    }
+    if(urlFilterString.slice(1, -1).includes('|') && urlFilterString.slice(0, 2) !== '||'){
+        return false; // Cannot have | in the middle.
     }
     return true;
 }
@@ -459,7 +464,7 @@ function isValidManifest(manifest) {
         console.log(syntaxError);        
         return syntaxError;
     } else {
-        console.log("isValidManifest: true"); // correct
+        // console.log("isValidManifest: true"); // correct
         return true;
     }
 }
