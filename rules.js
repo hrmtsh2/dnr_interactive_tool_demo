@@ -49,8 +49,13 @@ filesInput.addEventListener('change', (event) => {
 // Display rules defined in a ruleset
 function displayRules(rulesetObject){
     const ruleFilesInfo = document.getElementById('ruleFilesInfo');
+
     const fileInfo = document.createElement('div');
-    let output = `<h3>Ruleset ${rulesetObject.rulesetId}: </h3><ul>`;
+    const header = document.createElement('h3');
+    header.innerText = `Ruleset ${rulesetObject.rulesetId}:`;
+    fileInfo.appendChild(header); 
+    const list = document.createElement('ul');
+
     rulesetObject.ruleset.forEach(rule => {
         const urlFilterString = rule.condition.urlFilter;
         const ruleID = rule.id;
@@ -60,15 +65,17 @@ function displayRules(rulesetObject){
         } else {
             ruleIsValid = "Invalid.";
         }
-        output += `<li>${ruleID}: URLFilter String = ${urlFilterString}, Rules Validity: ${ruleIsValid}`; // for now this much info suffices
-        output += '</li>';
+        const listItem = document.createElement('li');
+        listItem.innerText = `${ruleID}: URLFilter String = ${urlFilterString}, Rules Validity: ${ruleIsValid}`;
+        list.appendChild(listItem);
+
         let indexedRule = urlFilterParse(rule.condition.urlFilter);
         indexedRulesList.push({indexedRule, ruleId: ruleID, rulesetId: rulesetObject.rulesetId});
     });
-    output += '</ul>';
-    fileInfo.innerHTML = output;
+    fileInfo.appendChild(list);
     ruleFilesInfo.appendChild(fileInfo);
 }
+
 
 // Checks validity of URLFilter string
 function isValidURLFilter(urlFilterString) {

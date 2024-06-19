@@ -16,22 +16,22 @@ manifestFileInput.addEventListener('change', (event) => {
                     displayRulesetFilePaths(manifestObject);
                 } else {
                     const fileInfoDiv = document.getElementById('manifestFileInfo');
-                    let output = "<ul>";
 
-                    for(let i = 0; i < manifestSyntaxError['type'].length; i++){
-                        if(manifestSyntaxError['type'][i] === 'missingFields'){
+                    let output = "Issues found:\n";
+
+                    for (let i = 0; i < manifestSyntaxError['type'].length; i++) {
+                        if (manifestSyntaxError['type'][i] === 'missingFields') {
                             let missingFields = manifestSyntaxError['missingFields'].join(', ');
-                            // fileInfoDiv.textContent = `Missing fields: ${missingFields}`;
-                            output += `<li>Missing fields: ${missingFields}</li>`;
+                            output += `- Missing fields: ${missingFields}\n`;
                         }
-                        if(manifestSyntaxError['type'][i] === 'invalidValueTypes'){
+                        if (manifestSyntaxError['type'][i] === 'invalidValueTypes') {
                             let invalidValueTypes = manifestSyntaxError['invalidValueTypes'].join(', ');
-                            // fileInfoDiv.textContent = `Invalid value types for: ${invalidValueTypes}`;
-                            output += `<li>Invalid value types for: ${invalidValueTypes}</li>`;
+                            output += `- Invalid value types for: ${invalidValueTypes}\n`;
                         }
-                        output += '</ul>';
-                        fileInfoDiv.innerHTML = output;                    
                     }
+                    
+                    fileInfoDiv.innerText = output;
+                        
                 }
             } catch(error){
                 console.log("Error parsing manifest JSON: ", error);
@@ -45,16 +45,15 @@ manifestFileInput.addEventListener('change', (event) => {
 // Display the paths for the ruleset files, as defined in the manifest
 function displayRulesetFilePaths(manifest){
     const fileInfo = document.getElementById('manifestFileInfo');
-    let output = '<h3>Ruleset Files:</h3><ul>';    
+    let output = 'Ruleset Files:\n';    
     if(manifest.declarative_net_request.rule_resources){
         manifest.declarative_net_request.rule_resources.forEach(ruleset => {
-            output += `<li>${ruleset.id}: ${ruleset.path}, Enabled: ${ruleset.enabled}</li>`;
+            output += `- ${ruleset.id}: ${ruleset.path}, Enabled: ${ruleset.enabled}\n`;
             rulesetFilePaths.push({rulesetFilePath: ruleset.path, rulesetId: ruleset.id});
         });
-        output += '</ul>';
         // console.log(rulesetFilePaths); // correct
-        fileInfo.innerHTML = output;     
-    }
+        fileInfo.innerText = output;     
+    }       
 }
 
 // Checks syntax and validity of the manifest file
@@ -208,8 +207,8 @@ function isValidManifest(manifest) {
     // }
 
     if(syntaxError.isError == true){
-        console.log("manifest syntax error: ");
-        console.log(syntaxError);        
+        // console.log("manifest syntax error: "); // correct
+        // console.log(syntaxError); // correct
         return syntaxError;
     } else {
         // console.log("isValidManifest: true"); // correct
