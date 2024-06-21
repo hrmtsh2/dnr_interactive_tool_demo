@@ -4,6 +4,20 @@ import { urlFilterParse } from './urlFilterParser.js';
 import { rulesetFilePaths } from './manifest.js';
 
 let indexedRulesList = [];
+/*
+Each object in this list has the following signature
+{
+    indexedRule: {
+        anchorLeft: 'BOUNDARY' | 'SUBDOMAIN' | 'NONE',
+        urlPatternType: 'SUBSTRING' | 'WILDCARDED',
+        urlPattern: 'abc*def',
+        anchorRight: 'BOUNDARY' | 'NONE'
+        },
+    ruleId: 1,
+    rulesetId: 1,
+    ruleEnabled: true
+}
+*/
 
 // Uploading and displaying ruleset files
 const filesInput = document.getElementById('ruleFilesInput');
@@ -66,11 +80,11 @@ function displayRules(rulesetObject){
             ruleIsValid = "Invalid.";
         }
         const listItem = document.createElement('li');
-        listItem.innerText = `${ruleID}: URLFilter String = ${urlFilterString}, Rules Validity: ${ruleIsValid}`;
+        listItem.innerText = `Rule ID = ${ruleID}: URLFilter String = ${urlFilterString}, Rules Validity: ${ruleIsValid}`;
         list.appendChild(listItem);
 
         let indexedRule = urlFilterParse(rule.condition.urlFilter);
-        indexedRulesList.push({indexedRule, ruleId: ruleID, rulesetId: rulesetObject.rulesetId});
+        indexedRulesList.push({indexedRule: indexedRule, ruleId: ruleID, rulesetId: rulesetObject.rulesetId});
     });
     fileInfo.appendChild(list);
     ruleFilesInfo.appendChild(fileInfo);
@@ -164,38 +178,5 @@ function isValidRuleset(ruleset) {
     return true;
 }
 
-/* Some tests for isValidURLFilter
-const testCases = [
-    { input: 'abc', expected: true },
-    { input: 'abc*d', expected: true },
-    { input: '||a.example.com', expected: true },
-    { input: 'example*^123|', expected: true },
-    { input: '||*example', expected: false },
-    { input: '|*example', expected: true },
-    { input: 'abc|def', expected: false },
-    { input: '||a|b', expected: false },
-    { input: 'abc||def', expected: false },
-    { input: 'abc||', expected: false },
-    { input: 'abc|*def', expected: false },
-    { input: 'abc^def', expected: true },
-    { input: 'abc^|def', expected: false },
-    { input: 'abc|^def', expected: false },
-    { input: 'abc|def|', expected: false },
-    { input: 'abc|def|ghi', expected: false },
-    { input: 'abc|def||ghi', expected: false },
-    { input: 'abc||def|ghi', expected: false },
-    { input: '||*', expected: false },
-    { input: '|', expected: false },
-    { input: '||', expected: false },
-    { input: '|something*^123/', expected: true },
-    { input: '|*?no-cookies=1', expected: true}
-];
-
-// Run test cases
-testCases.forEach(({ input, expected }) => {
-    const result = isValidURLFilter(input);
-    console.log(`isValidURLFilter("${input}") = ${result} (expected: ${expected})`);
-});*/
-
 // Export the variables and functions for use in other files
-export { indexedRulesList, displayRules, isValidRule, isValidURLFilter, isValidRuleset};
+export { indexedRulesList, displayRules, isValidRule, isValidURLFilter, isValidRuleset };

@@ -200,12 +200,6 @@ function isValidManifest(manifest) {
         }
     }
 
-    // if (manifest.manifest_version === 2) {
-    //     // Specific checks for manifest v2
-    // } else if (manifest.manifest_version === 3) {
-    //     // Specific checks for manifest v3
-    // }
-
     if(syntaxError.isError == true){
         // console.log("manifest syntax error: "); // correct
         // console.log(syntaxError); // correct
