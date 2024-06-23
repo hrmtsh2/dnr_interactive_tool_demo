@@ -61,6 +61,12 @@ function isValidManifest(manifest) {
     let syntaxError = {};
     syntaxError['type'] = [];
 
+    // Check for declarativeNetRequest permission
+    if(!manifest.permissions.includes('declarativeNetRequest')){
+        syntaxError.isError = true;
+        syntaxError['type'].push('missingPermissions');
+    }
+
     // Check for required fields
     const requiredFields = ['name', 'version', 'manifest_version']; // "descripton" and "icon" required for web store
     const requiredFieldsTypes = ['string', 'string', 'number'];
