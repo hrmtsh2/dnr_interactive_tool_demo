@@ -102,27 +102,17 @@ function urlFilterParse(urlFilterString) {
     return indexedRule;
 }
 
-// Test input urls against the generated indexedRule object
-function urlFilterTest(){
-    const testUrlElement = document.getElementById("testUrlInput");
-    const testUrl = testUrlElement.value;
-    const outputElement = document.getElementById("urlFilterTestOutput");
-    const urlPattern = indexedRuleTest.urlPattern;
+// Test input url against the generated indexedRule object
+function urlMatcher(url, indexedRule){
+    const urlPattern = indexedRule.urlPattern;
 
-    // Check if the url is valid
-    if(!testUrlElement.checkValidity()){
-        outputElement.textContent = "Invalid URL entered";
-        return false;
-    }
-    if(indexedRuleTest.urlPatternType === 'SUBSTRING'){
-        if(!testUrl.includes(urlPattern)){
-            outputElement.textContent = "URL does not match the rule";
-            return;
+    if(indexedRule.urlPatternType === 'SUBSTRING'){
+        if(!url.includes(urlPattern)){
+            return false;
         } else {
-            outputElement.textContent = "URL matches the rule";
-            return;
+            return true;
         }
-    } else if(indexedRuleTest.urlPatternType === 'WILDCARDED'){        
+    } else if(indexedRule.urlPatternType === 'WILDCARDED'){        
         let substrings = [];
         let string = "";
         for(let i = 0; i < urlPattern.length; i++){
@@ -138,62 +128,68 @@ function urlFilterTest(){
         substrings.push(string);
         let x = 0; // index in urlPattern
         let y = 0; // index in substrings
-        let index; // index in testUrl where the checking starts
-        if(indexedRuleTest.anchorLeft === 'BOUNDARY'){
+        let index; // index in url where the checking starts
+        if(indexedRule.anchorLeft === 'BOUNDARY'){
             index = 0;
         } else {
-            index = testUrl.indexOf(substrings[0]);
+            index = url.indexOf(substrings[0]);
             if(index == -1){
-                outputElement.textContent = "URL does not match the rule";
-                return;
+                return false;
             }
         }
-        if(indexedRuleTest.anchorRight === 'BOUNDARY'){
-            if((urlPattern[urlPattern.length - 1] != '^' && urlPattern[urlPattern.length - 1] != '*') && testUrl.endsWith(substrings[substrings.length - 1])){
-                outputElement.textContent = "URL matches the rule";
-                return;
+        if(indexedRule.anchorRight === 'BOUNDARY'){
+            if((urlPattern[urlPattern.length - 1] != '^' && urlPattern[urlPattern.length - 1] != '*') && url.endsWith(substrings[substrings.length - 1])){
+                return true;
             }
         }
-        if(indexedRuleTest.anchorLeft === 'SUBDOMAIN'){
-            index = testUrl.indexOf(substrings[0]);
+        if(indexedRule.anchorLeft === 'SUBDOMAIN'){
+            index = url.indexOf(substrings[0]);
             if(index == -1){
-                outputElement.textContent = "URL does not match the rule";
-                return;
+                return false;
             }
         }
         let unmatchables = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789_-.%";
-        // Can multiple wildcards be present in the urlPattern?
+        // DOUBT: Can multiple wildcards be present in the urlPattern?
         while(urlPattern[x] == '*'){
             x++;
 
         }
         while(urlPattern[x] == '^'){
-            if(unmatchables.includes(testUrl[index])){
-                outputElement.textContent = "URL does not match the rule";
-                return;
+            if(unmatchables.includes(url[index])){
+                return false;
             }
             x++;
             index++;
         }
-        let inOrder = (testUrl.indexOf(substrings[0], index) != -1);
+        let inOrder = (url.indexOf(substrings[0], index) != -1);
         for(let i = 1; i < substrings.length; i++){
-            if(testUrl.indexOf(substrings[i], testUrl.indexOf(substrings[i - 1])) == -1){
+            if(url.indexOf(substrings[i], url.indexOf(substrings[i - 1])) == -1){
                 inOrder = false;
                 break;
             }
         }
-        console.log(substrings);
-        console.log("In Order: " + inOrder);
         if(inOrder){
-            outputElement.textContent = "URL matches the rule";
+            return true;
         } else {
-            outputElement.textContent = "URL does not match the rule";
+            return false;
         }
     }
 }
 
 document.getElementById("UrlFilterParseDemoButton").addEventListener("click", urlFilterParseDemo);
-document.getElementById("UrlFilterTestButton").addEventListener("click", urlFilterTest);
+
+// Testing request matching
+document.getElementById("UrlTestButton").addEventListener("click", () => {
+    const testUrlElement = document.getElementById("urlTestInput");
+    const outputElement = document.getElementById("urlTestOutput");
+    if(!testUrlElement.checkValidity()){
+        outputElement.textContent = "Invalid URL entered";
+        return false;
+    }
+    const testUrl = testUrlElement.value;
+    let urlMatcherOutput = urlMatcher(testUrl, indexedRuleTest);
+    outputElement.textContent = urlMatcherOutput;
+});
 
 // Export the class for use in other files
-export { URLFilterParser, urlFilterParseDemo, urlFilterParse };
+export { URLFilterParser, urlFilterParseDemo, urlFilterParse, urlMatcher };

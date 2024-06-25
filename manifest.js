@@ -67,6 +67,8 @@ function isValidManifest(manifest) {
         syntaxError['type'].push('missingPermissions');
     }
 
+    // TODO: Check for declarativeNetRequestFeedback permission if debug-only features used
+
     // Check for required fields
     const requiredFields = ['name', 'version', 'manifest_version']; // "descripton" and "icon" required for web store
     const requiredFieldsTypes = ['string', 'string', 'number'];
@@ -216,5 +218,4 @@ function isValidManifest(manifest) {
     }
 }
 
-// Export the variables and functions for use in other files
 export { rulesetFilePaths, displayRulesetFilePaths, isValidManifest };

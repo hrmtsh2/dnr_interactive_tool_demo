@@ -1,23 +1,26 @@
 // rules.js
 
-import { urlFilterParse } from './urlFilterParser.js';
+import { urlFilterParse, urlMatcher } from './urlFilterParser.js';
 import { rulesetFilePaths } from './manifest.js';
 
-let indexedRulesList = [];
-/*
-Each object in this list has the following signature
-{
-    indexedRule: {
-        anchorLeft: 'BOUNDARY' | 'SUBDOMAIN' | 'NONE',
-        urlPatternType: 'SUBSTRING' | 'WILDCARDED',
-        urlPattern: 'abc*def',
-        anchorRight: 'BOUNDARY' | 'NONE'
-        },
-    ruleId: 1,
-    rulesetId: 1,
-    ruleEnabled: true
-}
-*/
+// Each object in this list has the following signature
+// {
+//    rule: {
+//        the rule itself
+//    }
+//    urlParserIndexedRule: {
+//        anchorLeft: 'BOUNDARY' | 'SUBDOMAIN' | 'NONE',
+//        urlPatternType: 'SUBSTRING' | 'WILDCARDED',
+//        urlPattern: 'abc*def',
+//        anchorRight: 'BOUNDARY' | 'NONE'
+//        },
+//    ruleId: 1 | 2 | ... ,
+//    rulesetId: 1 | 2 | ...,
+//    ruleEnabled: true | false
+// }
+let parsedRulesList = [];
+
+let request = {}; // Will be assigned with request created in the request matching tester
 
 // Uploading and displaying ruleset files
 const filesInput = document.getElementById('ruleFilesInput');
@@ -84,7 +87,7 @@ function displayRules(rulesetObject){
         list.appendChild(listItem);
 
         let indexedRule = urlFilterParse(rule.condition.urlFilter);
-        indexedRulesList.push({indexedRule: indexedRule, ruleId: ruleID, rulesetId: rulesetObject.rulesetId});
+        parsedRulesList.push({rule: rule, urlParserIndexedRule: indexedRule, ruleId: ruleID, rulesetId: rulesetObject.rulesetId});
     });
     fileInfo.appendChild(list);
     ruleFilesInfo.appendChild(fileInfo);
@@ -178,5 +181,48 @@ function isValidRuleset(ruleset) {
     return true;
 }
 
+// TODO: Priority resolution in case of multiple request-rule matches
+document.getElementById("RequestTestForm").addEventListener('submit', (event) => {
+    event.preventDefault();
+    const formData = new FormData(event.target);
+    const formObject = {};
+    formData.forEach((value, key) => {
+        if(key === "httpHeaders"){
+            value = JSON.parse(value);
+        }
+        formObject[key] = value;
+    });
+    const output = document.getElementById("RequestOutput"); // output the request and show it as an object
+    output.textContent = JSON.stringify(formObject, null, 2);
+    // console.log('Form data: ' + JSON.stringify(formObject)); // correct
+    request = formObject;
+    if(parsedRulesList.length !== 0){
+        requestMatcher();
+    } else {
+        console.log("requestMatcher() could not be called as parsedRulesList isn't populated.");
+    }
+});
+
+// Check which (one or multiple) of the rules in parsedRulesList matches with request
+// Then produce output (to be shown in RequestTestOutput pre) that shows what happened with the request (preferable also as an object)
+// requestTestOutput object has the following signature:-
+// {
+//
+//
+// }
+function requestMatcher(){
+    for(let i = 0; i < parsedRulesList.length; i++){
+        const rule = parsedRulesList[i]; // each element is an object with the signature as defined at top of file
+        const output = document.getElementById("RequestTestOutput"); // output the rule that matched as an object
+        // console.log(JSON.stringify(rule)); // correct
+        if(urlMatcher(request.httpRequestUrl, rule.urlParserIndexedRule) === true){
+            // console.log("Request matched with rule: ruleset ID: " + rule.rulesetId + ", rule ID: " + rule.ruleId + ", url filter string: " + rule.rule.condition.urlFilter); // correct
+            output.textContent = JSON.stringify(rule, null, 2);
+        }
+    }
+    // console.log(parsedRulesList);
+}
+
+
 // Export the variables and functions for use in other files
-export { indexedRulesList, displayRules, isValidRule, isValidURLFilter, isValidRuleset };
+export { parsedRulesList, displayRules, isValidRule, isValidURLFilter, isValidRuleset };
