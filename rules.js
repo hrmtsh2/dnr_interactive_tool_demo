@@ -1,3 +1,19 @@
+/**
+ * Copyright 2024 [TODO: COPYRIGHT HOLDER NAME]
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 // rules.js
 
 import { urlFilterParse, urlMatcher } from './urlFilterParser.js';
@@ -205,22 +221,23 @@ document.getElementById("RequestTestForm").addEventListener('submit', (event) =>
 
 // Check which (one or multiple) of the rules in parsedRulesList matches with request
 // Then produce output (to be shown in RequestTestOutput pre) that shows what happened with the request (preferable also as an object)
-// requestTestOutput object has the following signature:-
-// {
-//
-//
-// }
+// Returns rule that matched with the request
 function requestMatcher(){
+    let matchedRulesList = [];
     for(let i = 0; i < parsedRulesList.length; i++){
         const rule = parsedRulesList[i]; // each element is an object with the signature as defined at top of file
         const output = document.getElementById("RequestTestOutput"); // output the rule that matched as an object
+        let outputTextContent = output.textContent;
         // console.log(JSON.stringify(rule)); // correct
         if(urlMatcher(request.httpRequestUrl, rule.urlParserIndexedRule) === true){
             // console.log("Request matched with rule: ruleset ID: " + rule.rulesetId + ", rule ID: " + rule.ruleId + ", url filter string: " + rule.rule.condition.urlFilter); // correct
-            output.textContent = JSON.stringify(rule, null, 2);
+            outputTextContent += JSON.stringify(rule, null, 2);
+            matchedRulesList.push(rule);
         }
     }
-    // console.log(parsedRulesList);
+    output.textContent = outputTextContent;
+    // console.log(parsedRulesList); // correct
+    
 }
 
 
